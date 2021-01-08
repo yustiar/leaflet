@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Choropleth Tutorial - Leaflet</title>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+    <!-- LEAFLET CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+
+    <!-- BOOTSTRAP CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+    
+    <!-- FONTAWESOME CSS -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css" integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+
+    <link href='http://fonts.googleapis.com/css?family=Bitter:400,300,700' rel='stylesheet' type='text/css'>
+
+
+
+    <style>
+        #map { width: 1000px; height: 800px; }
+        .info { padding: 6px 8px; font: 14px/16px Arial, Helvetica, sans-serif; background: white; background: rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; } .info h4 { margin: 0 0 5px; color: #777; }
+        .legend { text-align: left; line-height: 25px; color: #555; } .legend i { width: 25px; height: 25px; float: left; margin-right: 8px; opacity: 0.7; }
+        td{ font-size: 19px; }
+        .countryLabel{
+          background: rgba(255, 255, 255, 0);
+          border:0;
+          border-radius:0px;
+          box-shadow: 0 0px 0px;
+          font-size: 20px;
+          color: white;
+          font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+      
+
+      
+        <div class="card text-white mb-3" style="max-width: 1000px;">
+            <div class="card-header bg-dark">
+                <h1>Persebaran IPM Mataraman</h1>
+            </div>
+            <div class="card-body bg-light p-0">
+                <div id='map'></div>
+            </div>
+        </div>
+    </div>
+    
+
+
+
+
+    <script type="text/javascript" src="json/ipm.js"></script>
+
+    <!-- jQuery CDN - Slim version (=without AJAX) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    
+    </script>
+    <!-- Popper.JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js" integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ" crossorigin="anonymous"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
+    <!-- LEAFLET JS -->
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
+
+    <script type="text/javascript">
+
+        var map = L.map('map',{
+            zoomControl : false,
+            preferCanvas : true
+        }).setView([-7.810, 111.305], 10);
+        
+        L.control.zoom({
+            position:'bottomleft'
+        }).addTo(map);
+
+        var tilelayer1 = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+                    '<a href="https://creativecommons.org/licenses/by-sa/2.0/"></a>',
+                id: 'openstreetmap'
+        })
+        tilelayer1.addTo(map);
+
+        // control that shows state info on hover
+        
+
+
+        // get color depending on population density value
+        function getColor(d) {
+            return  d > 80 ? '#002633' :
+                    d > 70 ? '#116480' :
+                    d > 60 ? '#4b97b3' :
+                             '#ebf5ff';
+        }
+
+        function style(feature) {
+            return {
+                weight: 2,
+                opacity: 1,
+                color: 'aqua',
+                dashArray: '3',
+                fillOpacity: 0.7,
+                fillColor: getColor(feature.properties.ipm)
+            };
+        }
+
+        function highlightFeature(e) {
+            var layer = e.target;
+
+            layer.setStyle({
+                weight: 5,
+                color: '#666',
+                dashArray: '',
+                fillOpacity: 0.7
+            });
+
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                layer.bringToFront();
+            }
+
+        }
+
+        var geojson;
+
+        function resetHighlight(e) {
+            geojson.resetStyle(e.target);
+        }
+
+
+        function onEachFeature(feature, layer) {
+            layer.on({
+                mouseover: highlightFeature,
+                mouseout: resetHighlight
+            });
+            // layer.bindTooltip(feature.properties.name, {permanent:true,direction:'top',location:'bottom',className: 'countryLabel'});    
+        }
+
+        geojson = L.geoJson(ipm_geojson, {
+            style: style,
+            onEachFeature: onEachFeature
+        }).addTo(map);
+
+        geojson.eachLayer(function (layer) {
+            layer.bindPopup('<table class="table-striped">'+
+                            '<thead class="table-light">'+
+                               '<tr>'+
+                                    '<td><b>Kabupaten/kota</b></td>'+
+                                    '<td>&nbsp;:&nbsp;</td>'+
+                                    '<td><b>'+layer.feature.properties.name+'</b></td>'+
+                                '</tr>'+
+                            '</thead>'+ 
+                            '<tbody>'+
+                                
+                                '<tr>'+
+                                    '<td>IPM</td>'+
+                                    '<td>&nbsp;:&nbsp;</td>'+
+                                    '<td>'+layer.feature.properties.ipm+'</td>'+
+                                '</tr>'+
+                                '<tr>'+
+                                    '<td>Pengeluaran per kapita   </td>'+
+                                    '<td>&nbsp;:&nbsp;</td>'+
+                                    '<td>Rp &nbsp;'+layer.feature.properties.pengeluaranperkapita+'</td>'+
+                                '</tr>'+
+                                '<tr>'+
+                                    '<td>MYS</td>'+
+                                    '<td>&nbsp;:&nbsp;</td>'+
+                                    '<td>'+layer.feature.properties.mys+'</td>'+
+                                '</tr>'+
+                                '<tr>'+
+                                    '<td>EYS</td>'+
+                                    '<td>&nbsp;:&nbsp;</td>'+
+                                    '<td>'+layer.feature.properties.eys+'</td>'+
+                                '</tr>'+
+                                '<tr>'+
+                                    '<td>UHH</td>'+
+                                    '<td>&nbsp;:&nbsp;</td>'+
+                                    '<td>'+layer.feature.properties.uhh+'</td>'+
+                                '</tr>'+
+                            '</tbody>'+
+                        '</table>'
+            );
+        });
+
+
+
+        
+
+        var legend = L.control({position: 'bottomright'});
+
+        // legend2.onAdd = function (map) {
+
+        //     var div = L.DomUtil.create('div', 'info legend'),
+        //         grades = [0, 60, 70, 80],
+        //         labels = [],
+        //         from, to;
+
+        //     for (var i = 0; i < grades.length; i++) {
+        //         from = grades[i];
+        //         to = grades[i + 1];
+
+        //         labels.push(
+        //             '<i style="background:' + getColor(from + 1) + '"></i> ' +
+        //             from + (to ? '&ndash;' + to : '+'));
+        //     }
+
+        //     div.innerHTML = labels.join('<br>');
+        //     return div;
+        // };
+        legend.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'info legend'),
+                    grades = [50, 60, 70, 80],
+                    labels = [];
+                div.innerHTML = '<strong>Keterangan</strong></br>';
+                
+                for (var i = 0; i < grades.length; i++) {
+                    div.innerHTML +=
+                        '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                        grades[i]+'&nbsp;'+ (grades[i + 1] ? ' - ' + grades[i + 1]+'&nbsp;' + '<br>' : '+');
+                }
+                return div;
+         
+            };
+
+
+        legend.addTo(map);
+
+
+        var markerpacitan = L.marker([-8.153657, 111.095796],{opacity:0}).bindTooltip("Pacitan", {
+            permanent: true,
+            direction:'auto',
+            className: 'countryLabel'
+        }).addTo(map); 
+        var markertrenggalek = L.marker([-8.160608, 111.611381],{opacity:0}).bindTooltip("Trenggalek", {
+            permanent: true,
+            direction:'auto',
+            className: 'countryLabel'
+        }).addTo(map); 
+        var markerponorogo = L.marker([-7.909322, 111.484775],{opacity:0}).bindTooltip("Ponorogo", {
+            permanent: true,
+            direction:'auto',
+            className: 'countryLabel'
+        }).addTo(map); 
+        var markermagetan = L.marker([-7.736362, 111.346360],{opacity:0}).bindTooltip("Magetan", {
+            permanent: true,
+            direction:'auto',
+            className: 'countryLabel'
+        }).addTo(map); 
+        var markermadiun = L.marker([-7.533520, 111.688495],{opacity:0}).bindTooltip("Madiun", {
+            permanent: true,
+            direction:'auto',
+            className: 'countryLabel'
+        }).addTo(map); 
+        var markermadiunkota = L.marker([-7.643907, 111.522660],{opacity:0}).bindTooltip("Kota Madiun", {
+            permanent: true,
+            direction:'bottom',
+            className: 'countryLabel'
+        }).addTo(map); 
+        var markerngawi = L.marker([-7.431788, 111.340576],{opacity:0}).bindTooltip("Ngawi", {
+            permanent: true,
+            direction:'auto',
+            className: 'countryLabel'
+        }).addTo(map); 
+
+       
+
+    </script>
+</body>
+</html>
